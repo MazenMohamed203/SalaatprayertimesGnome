@@ -49,9 +49,9 @@ export default class SalatPrayerTimeExtension extends Extension {
         this._adhanTriggeredFor   = null;
         this._preNotifiedSet      = new Set();
 
-        this._playerA.connect('eos', () => this._onQuranVerseEnded(this._playerB));
-        this._playerB.connect('eos', () => this._onQuranVerseEnded(this._playerA));
-        this._adhanPlayer.connect('eos', () => this._onAdhanEnded());
+        this._playerAEosId    = this._playerA.connect('eos', () => this._onQuranVerseEnded(this._playerB));
+        this._playerBEosId    = this._playerB.connect('eos', () => this._onQuranVerseEnded(this._playerA));
+        this._adhanEosId      = this._adhanPlayer.connect('eos', () => this._onAdhanEnded());
 
         // Start location resolution
         if (this._settings.get_boolean('auto-location')) {
@@ -891,13 +891,15 @@ export default class SalatPrayerTimeExtension extends Extension {
 
         if (mode === 2) {
             // Short Adhan — stop after 40 s
-            GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 40, () => {
+            this._adhanStopTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 40, () => {
+                this._adhanStopTimer = null;
                 if (this._isAdhanPlaying) { this._adhanPlayer.stop(); this._onAdhanEnded(); }
                 return GLib.SOURCE_REMOVE;
             });
         } else if (mode === 3) {
             // Takbeer only — stop after 15 s
-            GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 15, () => {
+            this._adhanStopTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 15, () => {
+                this._adhanStopTimer = null;
                 if (this._isAdhanPlaying) { this._adhanPlayer.stop(); this._onAdhanEnded(); }
                 return GLib.SOURCE_REMOVE;
             });
@@ -949,15 +951,26 @@ export default class SalatPrayerTimeExtension extends Extension {
         if (this._resolveTimeout)    { GLib.Source.remove(this._resolveTimeout);    this._resolveTimeout    = null; }
         if (this._refetchTimeout)    { GLib.Source.remove(this._refetchTimeout);    this._refetchTimeout    = null; }
         if (this._alarmTimerAtPrayer !== null) { GLib.Source.remove(this._alarmTimerAtPrayer); this._alarmTimerAtPrayer = null; }
+        if (this._adhanStopTimer !== null && this._adhanStopTimer !== undefined) { GLib.Source.remove(this._adhanStopTimer); this._adhanStopTimer = null; }
 
         // Stop services and destroy objects
         if (this._locationService) {
             this._locationService.stop();
             this._locationService = null;
         }
-        if (this._playerA)     { this._playerA.destroy();     this._playerA     = null; }
-        if (this._playerB)     { this._playerB.destroy();     this._playerB     = null; }
-        if (this._adhanPlayer) { this._adhanPlayer.destroy(); this._adhanPlayer = null; }
+        // Disconnect audio player signals before destroying
+        if (this._playerA) {
+            if (this._playerAEosId) { this._playerA.disconnect(this._playerAEosId); this._playerAEosId = null; }
+            this._playerA.destroy(); this._playerA = null;
+        }
+        if (this._playerB) {
+            if (this._playerBEosId) { this._playerB.disconnect(this._playerBEosId); this._playerBEosId = null; }
+            this._playerB.destroy(); this._playerB = null;
+        }
+        if (this._adhanPlayer) {
+            if (this._adhanEosId) { this._adhanPlayer.disconnect(this._adhanEosId); this._adhanEosId = null; }
+            this._adhanPlayer.destroy(); this._adhanPlayer = null;
+        }
         if (this._notifPlayer) { this._notifPlayer.destroy(); this._notifPlayer = null; }
         if (this._indicator)   { this._indicator.destroy();   this._indicator   = null; }
 
