@@ -1,0 +1,15 @@
+{
+  "uuid": "salatprayertime@mazen.github.com",
+  "name": "Salaat Prayer Times",
+  "description": "Offline-capable prayer times, Adhan, and Quran player for GNOME.",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "settings-schema": "org.gnome.shell.extensions.salatprayertime",
+  "url": "https://github.com/mazen/salatprayertime"
+}

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.salatprayertime" path="/org/gnome/shell/extensions/salatprayertime/">
+
+    <!-- Location -->
+    <key name="city" type="s"><default>'Makkah'</default><summary>City name</summary></key>
+    <key name="country" type="s"><default>'Saudi Arabia'</default><summary>Country name</summary></key>
+    <key name="use-coordinates" type="b"><default>false</default><summary>Use exact coordinates</summary></key>
+    <key name="latitude" type="s"><default>''</default><summary>Latitude</summary></key>
+    <key name="longitude" type="s"><default>''</default><summary>Longitude</summary></key>
+    <key name="timezone" type="s"><default>''</default><summary>Timezone (IANA)</summary></key>
+    <key name="auto-location" type="b"><default>true</default><summary>Use IP Geolocation for Auto Location</summary></key>
+
+    <!-- Display -->
+    <key name="hour-format" type="b"><default>true</default><summary>Use 12-hour format (AM/PM)</summary></key>
+    <key name="topbar-placement" type="i"><default>0</default><summary>Top bar placement (0=Right, 1=Center, 2=Left)</summary></key>
+    <key name="topbar-display-format" type="i"><default>0</default><summary>Top bar display format (0=Prayer+Time, 1=Prayer+Remaining, 2=Remaining only, 3=Both)</summary></key>
+    <key name="show-quran-player" type="b"><default>true</default><summary>Show the Quran player section in the widget</summary></key>
+    <key name="show-quran-translation" type="b"><default>false</default><summary>Show English translation under Arabic text</summary></key>
+    <key name="show-settings-button" type="b"><default>true</default><summary>Show the Settings button in the widget popup</summary></key>
+    <key name="show-hijri-date" type="b"><default>true</default><summary>Show Hijri date in the menu</summary></key>
+
+    <!-- Calculation -->
+    <key name="method" type="i"><default>3</default><summary>Calculation Method Index</summary></key>
+    <key name="school" type="i"><default>0</default><summary>Juristic School (0=Standard/Shafi, 1=Hanafi)</summary></key>
+
+    <!-- Prayer time offsets (minutes, ±60) -->
+    <key name="offset-fajr" type="i"><default>0</default><summary>Fajr time offset in minutes</summary></key>
+    <key name="offset-dhuhr" type="i"><default>0</default><summary>Dhuhr time offset in minutes</summary></key>
+    <key name="offset-asr" type="i"><default>0</default><summary>Asr time offset in minutes</summary></key>
+    <key name="offset-maghrib" type="i"><default>0</default><summary>Maghrib time offset in minutes</summary></key>
+    <key name="offset-isha" type="i"><default>0</default><summary>Isha time offset in minutes</summary></key>
+
+    <!-- Hijri -->
+    <key name="hijri-offset" type="i"><default>0</default><summary>Hijri day offset</summary></key>
+
+    <!-- Notifications -->
+    <key name="notifications" type="b"><default>true</default><summary>Enable at-prayer notifications</summary></key>
+    <key name="pre-notification-minutes" type="i"><default>15</default><summary>Minutes before prayer to send pre-notification</summary></key>
+    <key name="pre-notification-sound" type="b"><default>true</default><summary>Play system sound with pre-notification</summary></key>
+
+    <!-- Adhan -->
+    <key name="adhan-audio-path" type="s"><default>''</default><summary>Custom Adhan Audio Path</summary></key>
+    <key name="adhan-volume" type="d"><default>0.5</default><summary>Adhan Volume</summary></key>
+    <key name="adhan-playback-mode" type="i"><default>3</default><summary>Adhan Playback Mode (0=Off, 1=Full, 2=Short 40s, 3=Takbeer 15s)</summary></key>
+    <key name="play-adhan-for-fajr" type="b"><default>true</default><summary>Play Adhan for Fajr</summary></key>
+    <key name="play-adhan-for-dhuhr" type="b"><default>true</default><summary>Play Adhan for Dhuhr</summary></key>
+    <key name="play-adhan-for-asr" type="b"><default>true</default><summary>Play Adhan for Asr</summary></key>
+    <key name="play-adhan-for-maghrib" type="b"><default>true</default><summary>Play Adhan for Maghrib</summary></key>
+    <key name="play-adhan-for-isha" type="b"><default>true</default><summary>Play Adhan for Isha</summary></key>
+
+    <!-- Quran -->
+    <key name="quran-reciter-index" type="i"><default>0</default><summary>Quran Reciter Index</summary></key>
+    <key name="quran-volume" type="d"><default>0.7</default><summary>Quran Volume</summary></key>
+
+    <!-- Language -->
+    <key name="language-index" type="i"><default>0</default><summary>Language index (0=English, 1=Arabic)</summary></key>
+    <key name="use-arabic-numbers" type="b"><default>false</default><summary>Use Arabic-Indic numerals</summary></key>
+
+  </schema>
+</schemalist>
