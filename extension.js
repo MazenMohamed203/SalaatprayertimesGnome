@@ -331,6 +331,9 @@ export default class SalatPrayerTimeExtension extends Extension {
             try {
                 const bytes = session.send_and_read_finish(res);
                 const data = JSON.parse(new TextDecoder().decode(bytes.get_data()));
+                // Store ayah counts for end-of-surah detection: index 0 = surah 1
+                this._surahAyahCounts = data.data.map(s => s.numberOfAyahs);
+                this._surahNames      = data.data.map(s => s.englishName);
                 this._surahSubMenu.label.set_text('Select Surah');
                 data.data.forEach(surah => {
                     const item = new PopupMenu.PopupMenuItem(`${surah.number}. ${surah.englishName}`);
@@ -437,9 +440,34 @@ export default class SalatPrayerTimeExtension extends Extension {
     _onQuranVerseEnded(nextPlayer) {
         if (!this._continuousQuran) return;
 
-        if (!this._isPlayingBismallah) {
-            this._quranCurrentAyah++;
-            this._quranGlobalAyah++;
+        // If we just finished the Bismallah, don't advance the ayah — play the actual first ayah
+        if (this._isPlayingBismallah) {
+            this._activePlayer = nextPlayer;
+            this._fetchAndPlayAyah(this._quranCurrentSurah, this._quranCurrentAyah, this._activePlayer);
+            return;
+        }
+
+        // Advance to the next ayah
+        this._quranCurrentAyah++;
+        this._quranGlobalAyah++;
+
+        // Check if we've finished the current surah
+        const surahLength = this._surahAyahCounts
+            ? this._surahAyahCounts[this._quranCurrentSurah - 1]
+            : null;
+
+        if (surahLength !== null && this._quranCurrentAyah > surahLength) {
+            // Move to the next surah (wrap 114 → 1)
+            this._quranCurrentSurah = this._quranCurrentSurah >= 114
+                ? 1
+                : this._quranCurrentSurah + 1;
+            this._quranCurrentAyah = 1;
+
+            // Update the surah label in the menu
+            if (this._surahNames) {
+                const newName = this._surahNames[this._quranCurrentSurah - 1];
+                this._surahSubMenu.label.set_text(`Surah ${newName}`);
+            }
         }
 
         this._activePlayer = nextPlayer;
