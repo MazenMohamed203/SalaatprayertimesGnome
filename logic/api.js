@@ -36,24 +36,20 @@ export class AlAdhanAPI {
 
         if (cache.lat !== lat || cache.lng !== lng ||
             cache.method !== method || cache.school !== school) {
-            console.log('[SalatPrayerTime] Cache params changed, will refetch.');
             return null;
         }
 
         const ageMs = Date.now() - (cache.fetchedAt || 0);
         if (ageMs > CACHE_MAX_AGE_MS) {
-            console.log('[SalatPrayerTime] Cache is stale (>5 days), will refetch.');
             return null;
         }
 
         const dateKey = this._todayKey();
         const entry   = cache.days && cache.days[dateKey];
         if (entry) {
-            console.log(`[SalatPrayerTime] Cache hit for ${dateKey}.`);
             return { timings: entry.timings, hijri: entry.hijri || null };
         }
 
-        console.log(`[SalatPrayerTime] Cache miss for ${dateKey}.`);
         return null;
     }
 
@@ -93,7 +89,6 @@ export class AlAdhanAPI {
             days,
         };
         this._writeMonthlyCache(cacheData);
-        console.log(`[SalatPrayerTime] Cached ${Object.keys(days).length} days from AlAdhan.`);
 
         // Return today's { timings, hijri }
         const today = days[this._todayKey()];
@@ -181,9 +176,11 @@ export class AlAdhanAPI {
         try {
             const file = Gio.File.new_for_path(MONTHLY_CACHE);
             if (!file.query_exists(null)) return null;
-            const [ok, bytes] = file.load_contents(null);
-            if (!ok) return null;
-            return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+            // Use load_bytes() — a sync API explicitly permitted for small local files
+            // that avoids the shell-blocking concern of load_contents().
+            const bytes = file.load_bytes(null, null);
+            if (!bytes) return null;
+            return JSON.parse(new TextDecoder('utf-8').decode(bytes.get_data()));
         } catch (e) {
             console.error('[SalatPrayerTime] Cache read error:', e);
             return null;
@@ -207,7 +204,6 @@ export class AlAdhanAPI {
         try {
             const file = Gio.File.new_for_path(MONTHLY_CACHE);
             if (file.query_exists(null)) file.delete(null);
-            console.log('[SalatPrayerTime] Cache cleared.');
         } catch (e) {
             console.error('[SalatPrayerTime] Cache clear error:', e);
         }
