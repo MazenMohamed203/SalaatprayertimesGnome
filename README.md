@@ -20,11 +20,10 @@ A GNOME Shell extension for Islamic prayer times that features built-in Adhan no
 2. Ensure you have the `gnome-extensions` command line tool installed.
 3. Build and install the extension (open the terminal in the folder):
 ```bash
-gnome-extensions pack --extra-source=assets/ --extra-source=logic/ --extra-source=LICENSE --force
-gnome-extensions install salatprayertime@mazen.github.com.shell-extension.zip --force
+gnome-extensions install salatprayertime-gnome.zip
 ```
 4. Log out and log back in.
-5. Enable the extension via the **Extensions** app.
+5. Enable the extension via the **Extensions manager** app.
 
 ## Configuration
 
