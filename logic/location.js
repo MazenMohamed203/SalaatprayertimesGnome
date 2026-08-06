@@ -1,9 +1,6 @@
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 
-// ── Auto method selection from country name ─────────────────────────────────
-// Mirrors the same logic in prefs.js so first-boot auto-location picks the
-// right calculation method without the user needing to open Settings.
 function autoMethodFromCountry(country) {
     const c = (country || '').toLowerCase();
     if (c.includes('egypt'))                                                           return 5;
@@ -29,13 +26,14 @@ function autoMethodFromCountry(country) {
 
 /**
  * LocationService — resolves the user's location via IP geolocation.
- * Primary: ipwho.is  |  Fallback: ip-api.com
+ * Primary: ipwho.is  |  Fallback: freeipapi.com
  *
  * On success also auto-selects the best calculation method for the country.
  */
 export class LocationService {
     constructor(settings) {
         this._settings = settings;
+        this._session  = new Soup.Session();
         this._starting = false;
     }
 
@@ -45,18 +43,15 @@ export class LocationService {
         this._tryPrimary();
     }
 
-    /** ipwho.is — free, no key required, returns JSON with success flag */
     _tryPrimary() {
-        const url     = 'https://ipwho.is/';
-        const message = Soup.Message.new('GET', url);
-        const session = new Soup.Session();
-
-        session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
+        const message = Soup.Message.new('GET', 'https://ipwho.is/');
+        this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
             try {
                 const bytes = session.send_and_read_finish(res);
                 if (message.status_code === 200) {
                     const data = JSON.parse(new TextDecoder('utf-8').decode(bytes.get_data()));
                     if (data.success && data.latitude != null && data.longitude != null) {
+                        if (!this._starting) return;
                         this._apply(data.latitude, data.longitude, data.timezone, data.country);
                         this._starting = false;
                         return;
@@ -69,28 +64,22 @@ export class LocationService {
         });
     }
 
-    /**
-     * ip-api.com — free (non-commercial).
-     * Adds 'country' to the fields list.
-     */
     _tryFallback() {
-        const url     = 'http://ip-api.com/json/?fields=status,lat,lon,timezone,country';
-        const message = Soup.Message.new('GET', url);
-        const session = new Soup.Session();
-
-        session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
+        const message = Soup.Message.new('GET', 'https://freeipapi.com/api/json');
+        this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
             try {
                 const bytes = session.send_and_read_finish(res);
                 if (message.status_code === 200) {
                     const data = JSON.parse(new TextDecoder('utf-8').decode(bytes.get_data()));
-                    if (data.status === 'success' && data.lat != null && data.lon != null) {
-                        this._apply(data.lat, data.lon, data.timezone, data.country);
+                    if (data.latitude != null && data.longitude != null) {
+                        if (!this._starting) return;
+                        this._apply(data.latitude, data.longitude, data.timeZone, data.countryName);
                         this._starting = false;
                         return;
                     }
                 }
             } catch (e) {
-                console.error('[SalatPrayerTime] ip-api.com geolocation failed:', e);
+                console.error('[SalatPrayerTime] freeipapi.com geolocation failed:', e);
             }
             console.error('[SalatPrayerTime] All geolocation services failed.');
             this._starting = false;
@@ -98,27 +87,24 @@ export class LocationService {
     }
 
     _apply(lat, lng, timezone, country) {
-        console.log(`[SalatPrayerTime] Geolocation resolved: ${lat}, ${lng}, tz=${timezone}, country=${country}`);
-
         this._settings.set_string('latitude',  lat.toString());
         this._settings.set_string('longitude', lng.toString());
 
-        if (timezone && typeof timezone === 'string' && timezone !== '')
+        if (timezone)
             this._settings.set_string('timezone', timezone);
 
-        // Auto-set the country name so the user sees it in Settings
-        if (country && typeof country === 'string' && country !== '')
+        if (country)
             this._settings.set_string('country', country);
 
-        // Auto-select the best calculation method for this country
-        if (country) {
-            const method = autoMethodFromCountry(country);
-            console.log(`[SalatPrayerTime] Auto-selected method ${method} for country: ${country}`);
-            this._settings.set_int('method', method);
-        }
+        if (country)
+            this._settings.set_int('method', autoMethodFromCountry(country));
     }
 
     stop() {
         this._starting = false;
+        if (this._session) {
+            this._session.abort();
+            this._session = null;
+        }
     }
 }

@@ -1,10 +1,10 @@
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 const CACHE_DIR        = GLib.build_filenamev([GLib.get_user_cache_dir(), 'salatprayertime']);
 const MONTHLY_CACHE    = GLib.build_filenamev([CACHE_DIR, 'monthly_cache.json']);
-const CACHE_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 days in milliseconds
+const CACHE_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
 
 export class AlAdhanAPI {
     constructor() {
@@ -23,6 +23,13 @@ export class AlAdhanAPI {
         }
     }
 
+    destroy() {
+        if (this.session) {
+            this.session.abort();
+            this.session = null;
+        }
+    }
+
     // ── Monthly Calendar Cache ─────────────────────────────────────────────────
 
     /**
@@ -30,27 +37,19 @@ export class AlAdhanAPI {
      * Returns { timings, hijri } or null if cache is missing/stale/params changed.
      * hijri: { day, month: { number, en, ar }, year } as returned by AlAdhan.
      */
-    loadTodayFromCache(lat, lng, method, school) {
-        const cache = this._readMonthlyCache();
+    async loadTodayFromCache(lat, lng, method, school) {
+        const cache = await this._readMonthlyCache();
         if (!cache) return null;
 
         if (cache.lat !== lat || cache.lng !== lng ||
-            cache.method !== method || cache.school !== school) {
+            cache.method !== method || cache.school !== school)
             return null;
-        }
 
-        const ageMs = Date.now() - (cache.fetchedAt || 0);
-        if (ageMs > CACHE_MAX_AGE_MS) {
+        if (Date.now() - (cache.fetchedAt || 0) > CACHE_MAX_AGE_MS)
             return null;
-        }
 
-        const dateKey = this._todayKey();
-        const entry   = cache.days && cache.days[dateKey];
-        if (entry) {
-            return { timings: entry.timings, hijri: entry.hijri || null };
-        }
-
-        return null;
+        const entry = cache.days && cache.days[this._todayKey()];
+        return entry ? { timings: entry.timings, hijri: entry.hijri || null } : null;
     }
 
     /**
@@ -60,20 +59,17 @@ export class AlAdhanAPI {
      * Returns today's timings on success.
      */
     async fetchAndCacheMonthly(lat, lng, method, school) {
-        const now     = GLib.DateTime.new_now_local();
-        const year    = now.get_year();
-        const month   = now.get_month();
+        const now   = GLib.DateTime.new_now_local();
+        const year  = now.get_year();
+        const month = now.get_month();
 
-        // Fetch current month + next month in parallel
         const [thisMonth, nextMonth] = await Promise.all([
             this._fetchMonth(lat, lng, method, school, year, month),
             this._fetchMonth(lat, lng, method, school,
                 month === 12 ? year + 1 : year,
-                month === 12 ? 1 : month + 1
-            ),
+                month === 12 ? 1 : month + 1),
         ]);
 
-        // Merge into a flat day → { timings, hijri } map
         const days = {};
         for (const entry of [...thisMonth, ...nextMonth]) {
             const key = this._entryDateKey(entry);
@@ -83,14 +79,8 @@ export class AlAdhanAPI {
             };
         }
 
-        const cacheData = {
-            fetchedAt: Date.now(),
-            lat, lng, method, school,
-            days,
-        };
-        this._writeMonthlyCache(cacheData);
+        this._writeMonthlyCache({ fetchedAt: Date.now(), lat, lng, method, school, days });
 
-        // Return today's { timings, hijri }
         const today = days[this._todayKey()];
         if (!today) throw new Error('Today not found in API response');
         return today;
@@ -124,15 +114,11 @@ export class AlAdhanAPI {
 
     /** Extract YYYY-MM-DD key from an AlAdhan calendar entry */
     _entryDateKey(entry) {
-        try {
-            const g = entry.date.gregorian;
-            const y = g.year;
-            const m = g.month.number.toString().padStart(2, '0');
-            const d = g.day.padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        } catch (_) {
-            return null;
-        }
+        const g = entry?.date?.gregorian;
+        if (!g) return null;
+        const m = g.month.number.toString().padStart(2, '0');
+        const d = g.day.padStart(2, '0');
+        return `${g.year}-${m}-${d}`;
     }
 
     /** Today as "YYYY-MM-DD" */
@@ -157,11 +143,7 @@ export class AlAdhanAPI {
 
     /** Pull Hijri date from an AlAdhan entry (null if missing) */
     _extractHijri(entry) {
-        try {
-            return entry.date.hijri || null;
-        } catch (_) {
-            return null;
-        }
+        return entry?.date?.hijri ?? null;
     }
 
     /** Strip " (TZ)" or ":SS" suffix → plain "HH:MM" */
@@ -173,39 +155,48 @@ export class AlAdhanAPI {
     // ── Cache I/O ─────────────────────────────────────────────────────────────
 
     _readMonthlyCache() {
-        try {
+        return new Promise((resolve) => {
             const file = Gio.File.new_for_path(MONTHLY_CACHE);
-            if (!file.query_exists(null)) return null;
-            // Use load_bytes() — a sync API explicitly permitted for small local files
-            // that avoids the shell-blocking concern of load_contents().
-            const bytes = file.load_bytes(null, null);
-            if (!bytes) return null;
-            return JSON.parse(new TextDecoder('utf-8').decode(bytes.get_data()));
-        } catch (e) {
-            console.error('[SalatPrayerTime] Cache read error:', e);
-            return null;
-        }
+            if (!file.query_exists(null)) { resolve(null); return; }
+            file.load_contents_async(null, (ff, r) => {
+                try {
+                    const [ok, bytes] = ff.load_contents_finish(r);
+                    resolve(ok ? JSON.parse(new TextDecoder('utf-8').decode(bytes)) : null);
+                } catch (e) {
+                    console.error('[SalatPrayerTime] Cache read error:', e);
+                    resolve(null);
+                }
+            });
+        });
     }
 
     _writeMonthlyCache(data) {
-        try {
-            const file = Gio.File.new_for_path(MONTHLY_CACHE);
-            file.replace_contents(
-                new TextEncoder().encode(JSON.stringify(data)),
-                null, false, Gio.FileCreateFlags.NONE, null
-            );
-        } catch (e) {
-            console.error('[SalatPrayerTime] Cache write error:', e);
-        }
+        const file = Gio.File.new_for_path(MONTHLY_CACHE);
+        const bytes = new TextEncoder().encode(JSON.stringify(data));
+        file.replace_contents_bytes_async(
+            new GLib.Bytes(bytes),
+            null, false, Gio.FileCreateFlags.NONE, null,
+            (f, res) => {
+                try {
+                    f.replace_contents_finish(res);
+                } catch (e) {
+                    console.error('[SalatPrayerTime] Cache write error:', e);
+                }
+            }
+        );
     }
 
     /** Invalidate cache (called when user changes location/method) */
     clearCache() {
-        try {
-            const file = Gio.File.new_for_path(MONTHLY_CACHE);
-            if (file.query_exists(null)) file.delete(null);
-        } catch (e) {
-            console.error('[SalatPrayerTime] Cache clear error:', e);
+        const file = Gio.File.new_for_path(MONTHLY_CACHE);
+        if (file.query_exists(null)) {
+            file.delete_async(GLib.PRIORITY_DEFAULT, null, (f, res) => {
+                try {
+                    f.delete_finish(res);
+                } catch (e) {
+                    console.error('[SalatPrayerTime] Cache clear error:', e);
+                }
+            });
         }
     }
 

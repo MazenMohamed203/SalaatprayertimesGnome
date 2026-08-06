@@ -19,6 +19,7 @@
     <key name="show-quran-translation" type="b"><default>false</default><summary>Show English translation under Arabic text</summary></key>
     <key name="show-settings-button" type="b"><default>true</default><summary>Show the Settings button in the widget popup</summary></key>
     <key name="show-hijri-date" type="b"><default>true</default><summary>Show Hijri date in the menu</summary></key>
+    <key name="show-prayer-icons" type="b"><default>true</default><summary>Show prayer icons in the menu</summary></key>
 
     <!-- Calculation -->
     <key name="method" type="i"><default>3</default><summary>Calculation Method Index</summary></key>

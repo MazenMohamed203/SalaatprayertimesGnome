@@ -5,7 +5,6 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gst from 'gi://Gst';
 
-// Auto-select calculation method based on country name
 function autoMethodFromCountry(country) {
     const c = (country || '').toLowerCase();
     if (c.includes('egypt'))                                                          return 5;
@@ -30,17 +29,13 @@ function autoMethodFromCountry(country) {
 
 export default class SalatPrayerTimePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        const settings = this.getSettings('org.gnome.shell.extensions.salatprayertime');
+        const settings = this.getSettings();
 
-        // ══════════════════════════════════════════════════════════════
-        // PAGE 1: Location & Display
-        // ══════════════════════════════════════════════════════════════
         const page1 = new Adw.PreferencesPage({
             title: 'Location & Display',
             icon_name: 'preferences-system-symbolic',
         });
 
-        // ── Location ──────────────────────────────────────────────────
         const locationGroup = new Adw.PreferencesGroup({
             title: 'Location',
             description: 'How the extension finds your location.'
@@ -126,7 +121,7 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
 
             locationGroup.description = online
                 ? 'How the extension finds your location.'
-                : '⚠ Offline — enter your coordinates below to get accurate prayer times.';
+                : 'Offline — enter your coordinates below to get accurate prayer times.';
         };
 
         settings.connect('changed::auto-location',   updateLocationVisibility);
@@ -134,7 +129,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         netMon.connect('network-changed', () => updateLocationVisibility());
         updateLocationVisibility();
 
-        // ── Display ───────────────────────────────────────────────────
         const displayGroup = new Adw.PreferencesGroup({
             title: 'Display',
             description: 'What is shown in the top bar and menu.'
@@ -170,6 +164,12 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('show-hijri-date', showHijriSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showHijriRow.add_suffix(showHijriSwitch);
         displayGroup.add(showHijriRow);
+
+        const showPrayerIconsRow = new Adw.ActionRow({ title: 'Show Prayer Icons', subtitle: 'Show icons next to prayer names in the menu' });
+        const showPrayerIconsSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
+        settings.bind('show-prayer-icons', showPrayerIconsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        showPrayerIconsRow.add_suffix(showPrayerIconsSwitch);
+        displayGroup.add(showPrayerIconsRow);
 
         const hijriOffsetRow = new Adw.SpinRow({ title: 'Hijri Date Offset (days)', subtitle: 'Adjust if displayed date differs from moon sighting', numeric: true });
         hijriOffsetRow.set_range(-3, 3);
@@ -214,9 +214,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         page1.add(languageGroup);
         window.add(page1);
 
-        // ══════════════════════════════════════════════════════════════
-        // PAGE 2: Calculation & Offsets
-        // ══════════════════════════════════════════════════════════════
         const page2 = new Adw.PreferencesPage({
             title: 'Calculation',
             icon_name: 'accessories-calculator-symbolic',
@@ -257,7 +254,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('school', schoolRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         methodGroup.add(schoolRow);
 
-        // ── Prayer Time Offsets ───────────────────────────────────────
         const offsetGroup = new Adw.PreferencesGroup({
             title: 'Prayer Time Offsets',
             description: 'Fine-tune each prayer time by ±60 minutes to match local authority.'
@@ -282,15 +278,11 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         page2.add(offsetGroup);
         window.add(page2);
 
-        // ══════════════════════════════════════════════════════════════
-        // PAGE 3: Audio & Notifications
-        // ══════════════════════════════════════════════════════════════
         const page3 = new Adw.PreferencesPage({
             title: 'Audio',
             icon_name: 'audio-speakers-symbolic',
         });
 
-        // ── Notifications ─────────────────────────────────────────────
         const notifGroup = new Adw.PreferencesGroup({ title: 'Notifications' });
 
         const notifRow = new Adw.ActionRow({ title: 'At-Prayer Notifications', subtitle: 'Pop-up when prayer time arrives' });
@@ -318,7 +310,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         preNotifSoundRow.add_suffix(preNotifSoundSwitch);
         notifGroup.add(preNotifSoundRow);
 
-        // ── Adhan ─────────────────────────────────────────────────────
         const audioGroup = new Adw.PreferencesGroup({ title: 'Adhan' });
 
         const adhanModeRow = new Adw.ComboRow({
@@ -335,7 +326,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('adhan-volume', adhanVolRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         audioGroup.add(adhanVolRow);
 
-        // ── Test Athan button ─────────────────────────────────────────────────
         const testRow = new Adw.ActionRow({
             title: 'Test Adhan',
             subtitle: 'Preview your current adhan choice and volume'
@@ -359,15 +349,15 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         testBtn.connect('clicked', () => {
             if (testPipeline) { stopTestAdhan(); return; }
 
-            // Initialize GStreamer if not already done
-            try { Gst.init(null); } catch (_) {}
+            if (!Gst.is_initialized())
+                Gst.init(null);
 
             const customPath = settings.get_string('adhan-audio-path');
             const extPath    = this.metadata.path;
             const rawPath    = customPath || `${extPath}/assets/audio/Adhan.mp3`;
             const uri        = rawPath.startsWith('http') ? rawPath : `file://${rawPath}`;
             const vol        = settings.get_double('adhan-volume') || 0.5;
-            const mode       = settings.get_int('adhan-playback-mode'); // 1=Full,2=40s,3=15s
+            const mode       = settings.get_int('adhan-playback-mode');
 
             try {
                 testPipeline = Gst.parse_launch(
@@ -384,7 +374,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
                     });
                 }
 
-                // Also stop when EOS (full playback ends naturally)
                 const bus = testPipeline.get_bus();
                 bus.add_watch(GLib.PRIORITY_DEFAULT, (_bus, msg) => {
                     if (msg.type === Gst.MessageType.EOS || msg.type === Gst.MessageType.ERROR)
@@ -400,7 +389,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         testRow.add_suffix(testBtn);
         audioGroup.add(testRow);
 
-        // Per-prayer Adhan toggles
         const adhanPrayerGroup = new Adw.PreferencesGroup({
             title: 'Play Adhan For',
             description: 'Toggle Adhan playback per prayer.'
@@ -413,9 +401,6 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
             adhanPrayerGroup.add(row);
         });
 
-        // ══════════════════════════════════════════════════════════════
-        // PAGE 4: Quran
-        // ══════════════════════════════════════════════════════════════
         const page4 = new Adw.PreferencesPage({
             title: 'Quran',
             icon_name: 'media-tape-symbolic',

@@ -11,13 +11,8 @@ export const AudioPlayer = GObject.registerClass({
     constructor() {
         super();
 
-        // Initialise GStreamer inside enable() context, not at module scope
-        try {
+        if (!Gst.is_initialized())
             Gst.init(null);
-        } catch (e) {
-            console.error('[SalatPrayerTime] Failed to initialise GStreamer:', e);
-            return;
-        }
 
         this._player = Gst.ElementFactory.make('playbin', 'playbin');
         if (!this._player) {
@@ -74,32 +69,21 @@ export const AudioPlayer = GObject.registerClass({
         );
     }
 
-    /**
-     * Play a short notification beep using GStreamer's built-in audiotestsrc.
-     * No external files or processes required — works on every system with GStreamer.
-     * @param {number} volume  - 0.0 to 1.0
-     */
     playBeep(volume = 0.3) {
         if (!this._player) return;
-        try {
-            // 25 buffers at default 44100 Hz ≈ ~0.6 s tone, then EOS stops it naturally
-            const pipeline = Gst.parse_launch(
-                `audiotestsrc wave=sine freq=880 num-buffers=25 ! ` +
-                `volume volume=${Math.min(1.0, volume)} ! audioconvert ! autoaudiosink`
-            );
-            pipeline.set_state(Gst.State.PLAYING);
-
-            const bus = pipeline.get_bus();
-            bus.add_watch(GLib.PRIORITY_DEFAULT, (_bus, msg) => {
-                if (msg.type === Gst.MessageType.EOS || msg.type === Gst.MessageType.ERROR) {
-                    pipeline.set_state(Gst.State.NULL);
-                    return GLib.SOURCE_REMOVE;
-                }
-                return GLib.SOURCE_CONTINUE;
-            });
-        } catch (e) {
-            console.error('[SalatPrayerTime] playBeep failed:', e);
-        }
+        const pipeline = Gst.parse_launch(
+            `audiotestsrc wave=sine freq=880 num-buffers=25 ! ` +
+            `volume volume=${Math.min(1.0, volume)} ! audioconvert ! autoaudiosink`
+        );
+        pipeline.set_state(Gst.State.PLAYING);
+        const bus = pipeline.get_bus();
+        bus.add_watch(GLib.PRIORITY_DEFAULT, (_bus, msg) => {
+            if (msg.type === Gst.MessageType.EOS || msg.type === Gst.MessageType.ERROR) {
+                pipeline.set_state(Gst.State.NULL);
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
     }
 
     _onBusMessage(bus, message) {
