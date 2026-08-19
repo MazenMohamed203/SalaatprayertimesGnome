@@ -12,8 +12,8 @@ A GNOME Shell extension for Islamic prayer times that features built-in Adhan no
 
 ## Installation
 
-**Method 1: GNOME Extensions Website**
-*(Coming soon once approved on extensions.gnome.org)*
+[**Method 1: GNOME Extensions Website**](https://extensions.gnome.org/extension/9795/salaat-prayer-times/)
+
 
 **Method 2: Manual Installation**
 1. Download the repository as a ZIP file and extract it.
