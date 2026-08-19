@@ -10,6 +10,14 @@ export const AudioPlayer = GObject.registerClass({
 }, class AudioPlayer extends GObject.Object {
     constructor() {
         super();
+        this._player      = null;
+        this._bus         = null;
+        this._currentUri  = null;
+    }
+
+    _ensurePlayer() {
+        if (this._player)
+            return true;
 
         if (!Gst.is_initialized())
             Gst.init(null);
@@ -17,15 +25,16 @@ export const AudioPlayer = GObject.registerClass({
         this._player = Gst.ElementFactory.make('playbin', 'playbin');
         if (!this._player) {
             console.error('[SalatPrayerTime] Failed to create GStreamer playbin element');
-            return;
+            return false;
         }
 
         this._bus = this._player.get_bus();
         this._bus.add_watch(GLib.PRIORITY_DEFAULT, this._onBusMessage.bind(this));
-        this._currentUri = null;
+        return true;
     }
 
     setSource(uri) {
+        if (!this._ensurePlayer()) return;
         this._player.set_state(Gst.State.NULL);
         if (uri && !uri.startsWith('http://') && !uri.startsWith('https://') && !uri.startsWith('file://'))
             uri = 'file://' + uri;
@@ -35,33 +44,39 @@ export const AudioPlayer = GObject.registerClass({
     }
 
     play() {
-        if (this._currentUri)
+        if (this._player && this._currentUri)
             this._player.set_state(Gst.State.PLAYING);
     }
 
     pause() {
-        this._player.set_state(Gst.State.PAUSED);
+        if (this._player)
+            this._player.set_state(Gst.State.PAUSED);
     }
 
     stop() {
-        this._player.set_state(Gst.State.NULL);
+        if (this._player)
+            this._player.set_state(Gst.State.NULL);
     }
 
     setVolume(volume) {
-        this._player.set_property('volume', volume);
+        if (this._player)
+            this._player.set_property('volume', volume);
     }
 
     getPosition() {
+        if (!this._player) return 0;
         const [ret, pos] = this._player.query_position(Gst.Format.TIME);
         return ret ? Math.floor(pos / 1000000) : 0;
     }
 
     getDuration() {
+        if (!this._player) return 0;
         const [ret, dur] = this._player.query_duration(Gst.Format.TIME);
         return ret ? Math.floor(dur / 1000000) : 0;
     }
 
     setPosition(ms) {
+        if (!this._player) return;
         this._player.seek_simple(
             Gst.Format.TIME,
             Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
@@ -70,7 +85,8 @@ export const AudioPlayer = GObject.registerClass({
     }
 
     playBeep(volume = 0.3) {
-        if (!this._player) return;
+        if (!Gst.is_initialized())
+            Gst.init(null);
         const pipeline = Gst.parse_launch(
             `audiotestsrc wave=sine freq=880 num-buffers=25 ! ` +
             `volume volume=${Math.min(1.0, volume)} ! audioconvert ! autoaudiosink`
