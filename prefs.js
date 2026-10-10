@@ -171,6 +171,24 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         showPrayerIconsRow.add_suffix(showPrayerIconsSwitch);
         displayGroup.add(showPrayerIconsRow);
 
+        const showMidnightRow = new Adw.ActionRow({
+            title: 'Show Midnight (Jafari)',
+            subtitle: 'Half of the night between Sunset and Fajr',
+        });
+        const showMidnightSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
+        settings.bind('show-midnight', showMidnightSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        showMidnightRow.add_suffix(showMidnightSwitch);
+        displayGroup.add(showMidnightRow);
+
+        const showLastThirdRow = new Adw.ActionRow({
+            title: 'Show Last Third of the Night',
+            subtitle: 'Start of the final third of the night (Sunset to Fajr)',
+        });
+        const showLastThirdSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
+        settings.bind('show-last-third', showLastThirdSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        showLastThirdRow.add_suffix(showLastThirdSwitch);
+        displayGroup.add(showLastThirdRow);
+
         const hijriOffsetRow = new Adw.SpinRow({ title: 'Hijri Date Offset (days)', subtitle: 'Adjust if displayed date differs from moon sighting', numeric: true });
         hijriOffsetRow.set_range(-3, 3);
         hijriOffsetRow.adjustment.step_increment = 1;

@@ -1,7 +1,7 @@
 {
   "uuid": "salatprayertime@mazen.github.com",
   "name": "Salaat Prayer Times",
-  "version": 7,
+  "version": 9,
   "description": "Prayer times, Adhan, and Quran player for GNOME Shell. Uses aladhan.com for prayer time calculations, geocoding-api.open-meteo.com for city lookup, ipwho.is and freeipapi.com for automatic location detection, and alquran.cloud for Quran recitation.",
   "shell-version": [
     "45",
@@ -9,7 +9,8 @@
     "47",
     "48",
     "49",
-    "50"
+    "50",
+    "51"
   ],
   "settings-schema": "org.gnome.shell.extensions.salatprayertime",
   "url": "https://github.com/mazen/salatprayertime"
