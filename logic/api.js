@@ -37,12 +37,13 @@ export class AlAdhanAPI {
      * Returns { timings, hijri } or null if cache is missing/stale/params changed.
      * hijri: { day, month: { number, en, ar }, year } as returned by AlAdhan.
      */
-    async loadTodayFromCache(lat, lng, method, school) {
+    async loadTodayFromCache(lat, lng, method, school, tz = '') {
         const cache = await this._readMonthlyCache();
         if (!cache) return null;
 
         if (cache.lat !== lat || cache.lng !== lng ||
-            cache.method !== method || cache.school !== school)
+            cache.method !== method || cache.school !== school ||
+            (cache.tz || '') !== (tz || ''))
             return null;
 
         if (Date.now() - (cache.fetchedAt || 0) > CACHE_MAX_AGE_MS)
@@ -58,16 +59,16 @@ export class AlAdhanAPI {
      *   { fetchedAt, lat, lng, method, school, days: { "YYYY-MM-DD": {Fajr,...}, ... } }
      * Returns today's timings on success.
      */
-    async fetchAndCacheMonthly(lat, lng, method, school) {
+    async fetchAndCacheMonthly(lat, lng, method, school, tz = '') {
         const now   = GLib.DateTime.new_now_local();
         const year  = now.get_year();
         const month = now.get_month();
 
         const [thisMonth, nextMonth] = await Promise.all([
-            this._fetchMonth(lat, lng, method, school, year, month),
+            this._fetchMonth(lat, lng, method, school, year, month, tz),
             this._fetchMonth(lat, lng, method, school,
                 month === 12 ? year + 1 : year,
-                month === 12 ? 1 : month + 1),
+                month === 12 ? 1 : month + 1, tz),
         ]);
 
         const days = {};
@@ -79,7 +80,7 @@ export class AlAdhanAPI {
             };
         }
 
-        this._writeMonthlyCache({ fetchedAt: Date.now(), lat, lng, method, school, days });
+        this._writeMonthlyCache({ fetchedAt: Date.now(), lat, lng, method, school, tz, days });
 
         const today = days[this._todayKey()];
         if (!today) throw new Error('Today not found in API response');
@@ -87,9 +88,10 @@ export class AlAdhanAPI {
     }
 
     /** Fetch a single month from AlAdhan (/v1/calendar/{year}/{month}) */
-    _fetchMonth(lat, lng, method, school, year, month) {
-        const url = `https://api.aladhan.com/v1/calendar/${year}/${month}` +
-                    `?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`;
+    _fetchMonth(lat, lng, method, school, year, month, tz = '') {
+        let url = `https://api.aladhan.com/v1/calendar/${year}/${month}` +
+                  `?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`;
+        if (tz) url += `&timezone=${encodeURIComponent(tz)}`;
         return new Promise((resolve, reject) => {
             const message = Soup.Message.new('GET', url);
             this.session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
