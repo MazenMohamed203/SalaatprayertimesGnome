@@ -21,4 +21,6 @@ jobs:
             node --input-type=module --check < "$f" || exit 1
           done
       - name: Unit tests (gjs)
-        run: gjs -m tests/offlineCalc.test.js
+        run: |
+          gjs -m tests/offlineCalc.test.js
+          gjs -m tests/prayerCompute.test.js
