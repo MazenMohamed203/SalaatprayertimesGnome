@@ -10,7 +10,8 @@ export class AlAdhanAPI {
     constructor() {
         this.session = new Soup.Session();
         this.session.timeout = 10;
-        this._ensureCacheDirectory();
+        this._memoryCache = null;
+        this._memoryKey   = null;
     }
 
     _ensureCacheDirectory() {
@@ -37,7 +38,17 @@ export class AlAdhanAPI {
      * Returns { timings, hijri } or null if cache is missing/stale/params changed.
      * hijri: { day, month: { number, en, ar }, year } as returned by AlAdhan.
      */
+    _cacheKey(lat, lng, method, school, tz) {
+        return `${lat}|${lng}|${method}|${school}|${tz || ''}`;
+    }
+
     async loadTodayFromCache(lat, lng, method, school, tz = '') {
+        const key = this._cacheKey(lat, lng, method, school, tz);
+        if (this._memoryKey === key && this._memoryCache) {
+            const entry = this._memoryCache.days && this._memoryCache.days[this._todayKey()];
+            if (entry && Date.now() - (this._memoryCache.fetchedAt || 0) <= CACHE_MAX_AGE_MS)
+                return { timings: entry.timings, hijri: entry.hijri || null };
+        }
         const cache = await this._readMonthlyCache();
         if (!cache) return null;
 
@@ -80,7 +91,10 @@ export class AlAdhanAPI {
             };
         }
 
-        this._writeMonthlyCache({ fetchedAt: Date.now(), lat, lng, method, school, tz, days });
+        const cacheObj = { fetchedAt: Date.now(), lat, lng, method, school, tz, days };
+        this._writeMonthlyCache(cacheObj);
+        this._memoryKey = this._cacheKey(lat, lng, method, school, tz);
+        this._memoryCache = cacheObj;
 
         const today = days[this._todayKey()];
         if (!today) throw new Error('Today not found in API response');
@@ -190,6 +204,8 @@ export class AlAdhanAPI {
 
     /** Invalidate cache (called when user changes location/method) */
     clearCache() {
+        this._memoryCache = null;
+        this._memoryKey   = null;
         const file = Gio.File.new_for_path(MONTHLY_CACHE);
         if (file.query_exists(null)) {
             file.delete_async(GLib.PRIORITY_DEFAULT, null, (f, res) => {
