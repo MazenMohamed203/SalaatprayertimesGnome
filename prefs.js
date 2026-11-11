@@ -6,40 +6,42 @@ import GLib from 'gi://GLib';
 import Gst from 'gi://Gst';
 
 import { autoMethodFromCountry } from './logic/methods.js';
+import { initTranslations, _ } from './logic/i18n.js';
 
 export default class SalatPrayerTimePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+        initTranslations(this.metadata.path);
 
         const page1 = new Adw.PreferencesPage({
-            title: 'Location & Display',
+            title: _('Location & Display'),
             icon_name: 'preferences-system-symbolic',
         });
 
         const locationGroup = new Adw.PreferencesGroup({
-            title: 'Location',
-            description: 'How the extension finds your location.'
+            title: _('Location'),
+            description: _('How the extension finds your location.')
         });
 
-        const autoLocRow = new Adw.ActionRow({ title: 'Auto-Location (IP)', subtitle: 'Detect city automatically via IP' });
+        const autoLocRow = new Adw.ActionRow({ title: _('Auto-Location (IP)'), subtitle: _('Detect city automatically via IP') });
         const autoLocSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('auto-location', autoLocSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         autoLocRow.add_suffix(autoLocSwitch);
         locationGroup.add(autoLocRow);
 
-        const useCoordsRow = new Adw.ActionRow({ title: 'Use Exact Coordinates', subtitle: 'Recommended for accuracy' });
+        const useCoordsRow = new Adw.ActionRow({ title: _('Use Exact Coordinates'), subtitle: _('Recommended for accuracy') });
         const useCoordsSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('use-coordinates', useCoordsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         useCoordsRow.add_suffix(useCoordsSwitch);
         locationGroup.add(useCoordsRow);
 
-        const cityRow = new Adw.ActionRow({ title: 'City' });
+        const cityRow = new Adw.ActionRow({ title: _('City') });
         const cityEntry = new Gtk.Entry({ placeholder_text: 'e.g. Cairo', valign: Gtk.Align.CENTER, hexpand: true });
         settings.bind('city', cityEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
         cityRow.add_suffix(cityEntry);
         locationGroup.add(cityRow);
 
-        const countryRow = new Adw.ActionRow({ title: 'Country' });
+        const countryRow = new Adw.ActionRow({ title: _('Country') });
         const countryEntry = new Gtk.Entry({ placeholder_text: 'e.g. Egypt', valign: Gtk.Align.CENTER, hexpand: true });
         settings.bind('country', countryEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
         // Auto-select method when country changes
@@ -50,19 +52,19 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         countryRow.add_suffix(countryEntry);
         locationGroup.add(countryRow);
 
-        const latRow = new Adw.ActionRow({ title: 'Latitude' });
+        const latRow = new Adw.ActionRow({ title: _('Latitude') });
         const latEntry = new Gtk.Entry({ placeholder_text: 'e.g. 30.0626', valign: Gtk.Align.CENTER, hexpand: true });
         settings.bind('latitude', latEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
         latRow.add_suffix(latEntry);
         locationGroup.add(latRow);
 
-        const lngRow = new Adw.ActionRow({ title: 'Longitude' });
+        const lngRow = new Adw.ActionRow({ title: _('Longitude') });
         const lngEntry = new Gtk.Entry({ placeholder_text: 'e.g. 31.2497', valign: Gtk.Align.CENTER, hexpand: true });
         settings.bind('longitude', lngEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
         lngRow.add_suffix(lngEntry);
         locationGroup.add(lngRow);
 
-        const tzRow = new Adw.ActionRow({ title: 'Timezone', subtitle: 'e.g. Africa/Cairo — blank = system timezone' });
+        const tzRow = new Adw.ActionRow({ title: _('Timezone'), subtitle: _('e.g. Africa/Cairo — blank = system timezone') });
         const tzEntry = new Gtk.Entry({ placeholder_text: 'e.g. Africa/Cairo', valign: Gtk.Align.CENTER, hexpand: true });
         settings.bind('timezone', tzEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
         tzRow.add_suffix(tzEntry);
@@ -110,19 +112,19 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         updateLocationVisibility();
 
         const displayGroup = new Adw.PreferencesGroup({
-            title: 'Display',
-            description: 'What is shown in the top bar and menu.'
+            title: _('Display'),
+            description: _('What is shown in the top bar and menu.')
         });
 
         const topbarPlacementRow = new Adw.ComboRow({
-            title: 'Top Bar Placement',
+            title: _('Top Bar Placement'),
             model: Gtk.StringList.new(['Right (Default)', 'Center', 'Left'])
         });
         settings.bind('topbar-placement', topbarPlacementRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         displayGroup.add(topbarPlacementRow);
 
         const topbarFormatRow = new Adw.ComboRow({
-            title: 'Top Bar Format',
+            title: _('Top Bar Format'),
             model: Gtk.StringList.new([
                 'Prayer Name + Time (e.g. Dhuhr  12:30 PM)',
                 'Prayer Name + Countdown (e.g. Dhuhr  01:23)',
@@ -133,27 +135,27 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('topbar-display-format', topbarFormatRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         displayGroup.add(topbarFormatRow);
 
-        const hourFormatRow = new Adw.ActionRow({ title: '12-Hour Format (AM/PM)', subtitle: 'Off = 24-hour format' });
+        const hourFormatRow = new Adw.ActionRow({ title: _('12-Hour Format (AM/PM)'), subtitle: _('Off = 24-hour format') });
         const hourFormatSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('hour-format', hourFormatSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         hourFormatRow.add_suffix(hourFormatSwitch);
         displayGroup.add(hourFormatRow);
 
-        const showHijriRow = new Adw.ActionRow({ title: 'Show Hijri Date', subtitle: 'Show Islamic calendar date in the menu' });
+        const showHijriRow = new Adw.ActionRow({ title: _('Show Hijri Date'), subtitle: _('Show Islamic calendar date in the menu') });
         const showHijriSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-hijri-date', showHijriSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showHijriRow.add_suffix(showHijriSwitch);
         displayGroup.add(showHijriRow);
 
-        const showPrayerIconsRow = new Adw.ActionRow({ title: 'Show Prayer Icons', subtitle: 'Show icons next to prayer names in the menu' });
+        const showPrayerIconsRow = new Adw.ActionRow({ title: _('Show Prayer Icons'), subtitle: _('Show icons next to prayer names in the menu') });
         const showPrayerIconsSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-prayer-icons', showPrayerIconsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showPrayerIconsRow.add_suffix(showPrayerIconsSwitch);
         displayGroup.add(showPrayerIconsRow);
 
         const showMidnightRow = new Adw.ActionRow({
-            title: 'Show Midnight (Jafari)',
-            subtitle: 'Half of the night between Sunset and Fajr',
+            title: _('Show Midnight (Jafari)'),
+            subtitle: _('Half of the night between Sunset and Fajr'),
         });
         const showMidnightSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-midnight', showMidnightSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -161,46 +163,46 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         displayGroup.add(showMidnightRow);
 
         const showLastThirdRow = new Adw.ActionRow({
-            title: 'Show Last Third of the Night',
-            subtitle: 'Start of the final third of the night (Sunset to Fajr)',
+            title: _('Show Last Third of the Night'),
+            subtitle: _('Start of the final third of the night (Sunset to Fajr)'),
         });
         const showLastThirdSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-last-third', showLastThirdSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showLastThirdRow.add_suffix(showLastThirdSwitch);
         displayGroup.add(showLastThirdRow);
 
-        const hijriOffsetRow = new Adw.SpinRow({ title: 'Hijri Date Offset (days)', subtitle: 'Adjust if displayed date differs from moon sighting', numeric: true });
+        const hijriOffsetRow = new Adw.SpinRow({ title: _('Hijri Date Offset (days)'), subtitle: _('Adjust if displayed date differs from moon sighting'), numeric: true });
         hijriOffsetRow.set_range(-3, 3);
         hijriOffsetRow.adjustment.step_increment = 1;
         settings.bind('hijri-offset', hijriOffsetRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         displayGroup.add(hijriOffsetRow);
 
-        const showQuranRow = new Adw.ActionRow({ title: 'Show Quran Player', subtitle: 'Display the Quran player section in the widget' });
+        const showQuranRow = new Adw.ActionRow({ title: _('Show Quran Player'), subtitle: _('Display the Quran player section in the widget') });
         const showQuranSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-quran-player', showQuranSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showQuranRow.add_suffix(showQuranSwitch);
         displayGroup.add(showQuranRow);
 
-        const showSettingsRow = new Adw.ActionRow({ title: 'Show Settings Button', subtitle: 'Show the ⚙ Settings button inside the widget popup' });
+        const showSettingsRow = new Adw.ActionRow({ title: _('Show Settings Button'), subtitle: _('Show the ⚙ Settings button inside the widget popup') });
         const showSettingsSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-settings-button', showSettingsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         showSettingsRow.add_suffix(showSettingsSwitch);
         displayGroup.add(showSettingsRow);
 
         const languageGroup = new Adw.PreferencesGroup({
-            title: 'Language / اللغة',
+            title: _('Language / اللغة'),
         });
 
         const langRow = new Adw.ComboRow({
-            title: 'Language',
+            title: _('Language'),
             model: Gtk.StringList.new(['English', 'العربية (Arabic)'])
         });
         settings.bind('language-index', langRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         languageGroup.add(langRow);
 
         const arabicNumRow = new Adw.ActionRow({
-            title: 'Arabic Numerals (٠١٢٣٤٥٦٧٨٩)',
-            subtitle: 'Use Arabic-Indic digits for times and dates'
+            title: _('Arabic Numerals (٠١٢٣٤٥٦٧٨٩)'),
+            subtitle: _('Use Arabic-Indic digits for times and dates')
         });
         const arabicNumSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('use-arabic-numbers', arabicNumSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -213,17 +215,17 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         window.add(page1);
 
         const page2 = new Adw.PreferencesPage({
-            title: 'Calculation',
+            title: _('Calculation'),
             icon_name: 'accessories-calculator-symbolic',
         });
 
         const methodGroup = new Adw.PreferencesGroup({
-            title: 'Calculation Method',
-            description: 'Select the juristic authority for prayer time calculation.'
+            title: _('Calculation Method'),
+            description: _('Select the juristic authority for prayer time calculation.')
         });
 
         const methodRow = new Adw.ComboRow({
-            title: 'Method',
+            title: _('Method'),
             model: Gtk.StringList.new([
                 'Shia Ithna-Ashari',
                 'Karachi (HEC)',
@@ -246,15 +248,15 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         methodGroup.add(methodRow);
 
         const schoolRow = new Adw.ComboRow({
-            title: 'Juristic School (Asr)',
+            title: _('Juristic School (Asr)'),
             model: Gtk.StringList.new(['Standard (Shafi/Maliki/Hanbali)', 'Hanafi'])
         });
         settings.bind('school', schoolRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         methodGroup.add(schoolRow);
 
         const offsetGroup = new Adw.PreferencesGroup({
-            title: 'Prayer Time Offsets',
-            description: 'Fine-tune each prayer time by ±60 minutes to match local authority.'
+            title: _('Prayer Time Offsets'),
+            description: _('Fine-tune each prayer time by ±60 minutes to match local authority.')
         });
 
         const prayerOffsets = [
@@ -277,21 +279,21 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         window.add(page2);
 
         const page3 = new Adw.PreferencesPage({
-            title: 'Audio',
+            title: _('Audio'),
             icon_name: 'audio-speakers-symbolic',
         });
 
-        const notifGroup = new Adw.PreferencesGroup({ title: 'Notifications' });
+        const notifGroup = new Adw.PreferencesGroup({ title: _('Notifications') });
 
-        const notifRow = new Adw.ActionRow({ title: 'At-Prayer Notifications', subtitle: 'Pop-up when prayer time arrives' });
+        const notifRow = new Adw.ActionRow({ title: _('At-Prayer Notifications'), subtitle: _('Pop-up when prayer time arrives') });
         const notifSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('notifications', notifSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         notifRow.add_suffix(notifSwitch);
         notifGroup.add(notifRow);
 
         const preNotifRow = new Adw.SpinRow({
-            title: 'Pre-Prayer Notification (minutes)',
-            subtitle: '0 = disabled',
+            title: _('Pre-Prayer Notification (minutes)'),
+            subtitle: _('0 = disabled'),
             numeric: true
         });
         preNotifRow.set_range(0, 60);
@@ -300,24 +302,24 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         notifGroup.add(preNotifRow);
 
         const preNotifSoundRow = new Adw.ActionRow({
-            title: 'Pre-Prayer Notification Sound',
-            subtitle: 'Play system sound with the pre-prayer notification'
+            title: _('Pre-Prayer Notification Sound'),
+            subtitle: _('Play system sound with the pre-prayer notification')
         });
         const preNotifSoundSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('pre-notification-sound', preNotifSoundSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         preNotifSoundRow.add_suffix(preNotifSoundSwitch);
         notifGroup.add(preNotifSoundRow);
 
-        const audioGroup = new Adw.PreferencesGroup({ title: 'Adhan' });
+        const audioGroup = new Adw.PreferencesGroup({ title: _('Adhan') });
 
         const adhanModeRow = new Adw.ComboRow({
-            title: 'Adhan Playback',
+            title: _('Adhan Playback'),
             model: Gtk.StringList.new(['Off', 'Full Adhan', 'Short Adhan (40s)', 'Takbeer Only (15s)'])
         });
         settings.bind('adhan-playback-mode', adhanModeRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         audioGroup.add(adhanModeRow);
 
-        const adhanVolRow = new Adw.SpinRow({ title: 'Adhan Volume', numeric: true });
+        const adhanVolRow = new Adw.SpinRow({ title: _('Adhan Volume'), numeric: true });
         adhanVolRow.set_digits(2);
         adhanVolRow.set_range(0.0, 1.0);
         adhanVolRow.adjustment.step_increment = 0.05;
@@ -325,15 +327,15 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         audioGroup.add(adhanVolRow);
 
         const adhanPathRow = new Adw.EntryRow({
-            title: 'Custom Adhan Audio Path',
+            title: _('Custom Adhan Audio Path'),
             text: settings.get_string('adhan-audio-path') || ''
         });
         settings.bind('adhan-audio-path', adhanPathRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         audioGroup.add(adhanPathRow);
 
         const testRow = new Adw.ActionRow({
-            title: 'Test Adhan',
-            subtitle: 'Preview your current adhan choice and volume'
+            title: _('Test Adhan'),
+            subtitle: _('Preview your current adhan choice and volume')
         });
 
         let testPipeline = null;
@@ -398,8 +400,8 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         audioGroup.add(testRow);
 
         const adhanPrayerGroup = new Adw.PreferencesGroup({
-            title: 'Play Adhan For',
-            description: 'Toggle Adhan playback per prayer.'
+            title: _('Play Adhan For'),
+            description: _('Toggle Adhan playback per prayer.')
         });
         [['fajr','Fajr'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']].forEach(([key, label]) => {
             const row = new Adw.ActionRow({ title: label });
@@ -410,16 +412,16 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         });
 
         const page4 = new Adw.PreferencesPage({
-            title: 'Quran',
+            title: _('Quran'),
             icon_name: 'media-tape-symbolic',
-            description: 'Quran recitation and text settings.'
+            description: _('Quran recitation and text settings.')
         });
 
-        const quranGroup = new Adw.PreferencesGroup({ title: 'Quran Player' });
+        const quranGroup = new Adw.PreferencesGroup({ title: _('Quran Player') });
 
         const quranTransRow = new Adw.ActionRow({
-            title: 'Show English Translation',
-            subtitle: 'Display the Clear Quran translation under the Arabic text'
+            title: _('Show English Translation'),
+            subtitle: _('Display the Clear Quran translation under the Arabic text')
         });
         const quranTransSwitch = new Gtk.Switch({ valign: Gtk.Align.CENTER });
         settings.bind('show-quran-translation', quranTransSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -427,7 +429,7 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         quranGroup.add(quranTransRow);
 
         const reciterRow = new Adw.ComboRow({
-            title: 'Reciter',
+            title: _('Reciter'),
             model: Gtk.StringList.new([
                 'Abdul Basit (Murattal)',
                 'Abdul Basit (Mujawwad)',
@@ -443,7 +445,7 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('quran-reciter-index', reciterRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         quranGroup.add(reciterRow);
 
-        const quranVolRow = new Adw.SpinRow({ title: 'Quran Volume', numeric: true });
+        const quranVolRow = new Adw.SpinRow({ title: _('Quran Volume'), numeric: true });
         quranVolRow.set_digits(2);
         quranVolRow.set_range(0.0, 1.0);
         quranVolRow.adjustment.step_increment = 0.05;

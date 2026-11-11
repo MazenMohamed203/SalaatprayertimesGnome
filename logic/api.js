@@ -171,6 +171,7 @@ export class AlAdhanAPI {
     // ── Cache I/O ─────────────────────────────────────────────────────────────
 
     _readMonthlyCache() {
+        this._ensureCacheDirectory();
         return new Promise((resolve) => {
             const file = Gio.File.new_for_path(MONTHLY_CACHE);
             if (!file.query_exists(null)) { resolve(null); return; }
@@ -187,6 +188,7 @@ export class AlAdhanAPI {
     }
 
     _writeMonthlyCache(data) {
+        this._ensureCacheDirectory();
         const file = Gio.File.new_for_path(MONTHLY_CACHE);
         const bytes = new TextEncoder().encode(JSON.stringify(data));
         file.replace_contents_bytes_async(
