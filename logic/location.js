@@ -19,7 +19,8 @@ function autoMethodFromCountry(country) {
     if (c.includes('russia'))                                                          return 14;
     if (c.includes('morocco'))                                                         return 3;
     if (c.includes('jordan'))                                                          return 3;
-    if (c.includes('algeria') || c.includes('tunisia'))                               return 5;
+    if (c.includes('algeria'))                               return 5;
+    if (c.includes('tunisia'))                                return 15;
     if (c.includes('indonesia') || c.includes('malaysia'))                            return 11;
     return 3; // Muslim World League — safe global default
 }

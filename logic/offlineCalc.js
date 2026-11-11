@@ -13,20 +13,21 @@
 
 /** AlAdhan method index → Fajr/Isha angles */
 const METHODS = {
-    0:  { fajr: 18.0, isha: 17.0  }, // Shia Ithna-Ashari
-    1:  { fajr: 15.0, isha: 15.0  }, // Karachi
-    2:  { fajr: 18.0, isha: 18.0  }, // ISNA
-    3:  { fajr: 18.0, isha: 17.0  }, // MWL
-    4:  { fajr: 18.5, isha: 90.0  }, // Umm Al-Qura (90 = fixed 90-min after Maghrib)
-    5:  { fajr: 19.5, isha: 17.5  }, // Egyptian General Authority
-    7:  { fajr: 18.0, isha: 18.0  }, // Tehran
-    8:  { fajr: 18.0, isha: 17.5  }, // Gulf
-    9:  { fajr: 18.0, isha: 18.0  }, // Kuwait
-    10: { fajr: 18.0, isha: 18.0  }, // Qatar
-    11: { fajr: 18.0, isha: 18.0  }, // MUIS (Singapore)
-    12: { fajr: 18.0, isha: 18.0  }, // UOIF (France)
-    13: { fajr: 18.0, isha: 17.0  }, // Diyanet (Turkey)
-    14: { fajr: 18.0, isha: 18.0  }, // Russia
+    0:  { fajr: 16.0, isha: 14.0  }, // Shia Ithna-Ashari (Jafari)
+    1:  { fajr: 18.0, isha: 18.0  }, // University of Islamic Sciences, Karachi
+    2:  { fajr: 15.0, isha: 15.0  }, // ISNA (North America)
+    3:  { fajr: 18.0, isha: 17.0  }, // MWL (Muslim World League)
+    4:  { fajr: 18.5, isha: 90.0  }, // Umm Al-Qura (Makkah) -> 90 = 90-min offset (120 in Ramadan)
+    5:  { fajr: 19.5, isha: 17.5  }, // Egyptian General Authority of Survey
+    7:  { fajr: 17.7, isha: 14.0  }, // Institute of Geophysics, University of Tehran
+    8:  { fajr: 19.5, isha: 90.0  }, // Gulf Region
+    9:  { fajr: 18.0, isha: 17.5  }, // Kuwait
+    10: { fajr: 18.0, isha: 90.0  }, // Qatar
+    11: { fajr: 20.0, isha: 18.0  }, // MUIS (Singapore)
+    12: { fajr: 12.0, isha: 12.0  }, // UOIF (France)
+    13: { fajr: 18.0, isha: 17.0  }, // Diyanet (Türkiye)
+    14: { fajr: 16.0, isha: 15.0  }, // Spiritual Administration of Muslims of Russia
+    15: { fajr: 18.0, isha: 18.0  }, // Tunisian Ministry of Religious Affairs
 };
 
 // ── Math helpers ──────────────────────────────────────────────────────────────
