@@ -10,7 +10,8 @@ export class AlAdhanAPI {
     constructor() {
         this.session = new Soup.Session();
         this.session.timeout = 10;
-        this._ensureCacheDirectory();
+        this._memoryCache = null;
+        this._memoryKey   = null;
     }
 
     _ensureCacheDirectory() {
@@ -37,12 +38,23 @@ export class AlAdhanAPI {
      * Returns { timings, hijri } or null if cache is missing/stale/params changed.
      * hijri: { day, month: { number, en, ar }, year } as returned by AlAdhan.
      */
-    async loadTodayFromCache(lat, lng, method, school) {
+    _cacheKey(lat, lng, method, school, tz) {
+        return `${lat}|${lng}|${method}|${school}|${tz || ''}`;
+    }
+
+    async loadTodayFromCache(lat, lng, method, school, tz = '') {
+        const key = this._cacheKey(lat, lng, method, school, tz);
+        if (this._memoryKey === key && this._memoryCache) {
+            const entry = this._memoryCache.days && this._memoryCache.days[this._todayKey()];
+            if (entry && Date.now() - (this._memoryCache.fetchedAt || 0) <= CACHE_MAX_AGE_MS)
+                return { timings: entry.timings, hijri: entry.hijri || null };
+        }
         const cache = await this._readMonthlyCache();
         if (!cache) return null;
 
         if (cache.lat !== lat || cache.lng !== lng ||
-            cache.method !== method || cache.school !== school)
+            cache.method !== method || cache.school !== school ||
+            (cache.tz || '') !== (tz || ''))
             return null;
 
         if (Date.now() - (cache.fetchedAt || 0) > CACHE_MAX_AGE_MS)
@@ -58,16 +70,16 @@ export class AlAdhanAPI {
      *   { fetchedAt, lat, lng, method, school, days: { "YYYY-MM-DD": {Fajr,...}, ... } }
      * Returns today's timings on success.
      */
-    async fetchAndCacheMonthly(lat, lng, method, school) {
+    async fetchAndCacheMonthly(lat, lng, method, school, tz = '') {
         const now   = GLib.DateTime.new_now_local();
         const year  = now.get_year();
         const month = now.get_month();
 
         const [thisMonth, nextMonth] = await Promise.all([
-            this._fetchMonth(lat, lng, method, school, year, month),
+            this._fetchMonth(lat, lng, method, school, year, month, tz),
             this._fetchMonth(lat, lng, method, school,
                 month === 12 ? year + 1 : year,
-                month === 12 ? 1 : month + 1),
+                month === 12 ? 1 : month + 1, tz),
         ]);
 
         const days = {};
@@ -79,7 +91,10 @@ export class AlAdhanAPI {
             };
         }
 
-        this._writeMonthlyCache({ fetchedAt: Date.now(), lat, lng, method, school, days });
+        const cacheObj = { fetchedAt: Date.now(), lat, lng, method, school, tz, days };
+        this._writeMonthlyCache(cacheObj);
+        this._memoryKey = this._cacheKey(lat, lng, method, school, tz);
+        this._memoryCache = cacheObj;
 
         const today = days[this._todayKey()];
         if (!today) throw new Error('Today not found in API response');
@@ -87,9 +102,10 @@ export class AlAdhanAPI {
     }
 
     /** Fetch a single month from AlAdhan (/v1/calendar/{year}/{month}) */
-    _fetchMonth(lat, lng, method, school, year, month) {
-        const url = `https://api.aladhan.com/v1/calendar/${year}/${month}` +
-                    `?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`;
+    _fetchMonth(lat, lng, method, school, year, month, tz = '') {
+        let url = `https://api.aladhan.com/v1/calendar/${year}/${month}` +
+                  `?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`;
+        if (tz) url += `&timezone=${encodeURIComponent(tz)}`;
         return new Promise((resolve, reject) => {
             const message = Soup.Message.new('GET', url);
             this.session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, res) => {
@@ -155,6 +171,7 @@ export class AlAdhanAPI {
     // ── Cache I/O ─────────────────────────────────────────────────────────────
 
     _readMonthlyCache() {
+        this._ensureCacheDirectory();
         return new Promise((resolve) => {
             const file = Gio.File.new_for_path(MONTHLY_CACHE);
             if (!file.query_exists(null)) { resolve(null); return; }
@@ -171,6 +188,7 @@ export class AlAdhanAPI {
     }
 
     _writeMonthlyCache(data) {
+        this._ensureCacheDirectory();
         const file = Gio.File.new_for_path(MONTHLY_CACHE);
         const bytes = new TextEncoder().encode(JSON.stringify(data));
         file.replace_contents_bytes_async(
@@ -188,6 +206,8 @@ export class AlAdhanAPI {
 
     /** Invalidate cache (called when user changes location/method) */
     clearCache() {
+        this._memoryCache = null;
+        this._memoryKey   = null;
         const file = Gio.File.new_for_path(MONTHLY_CACHE);
         if (file.query_exists(null)) {
             file.delete_async(GLib.PRIORITY_DEFAULT, null, (f, res) => {
