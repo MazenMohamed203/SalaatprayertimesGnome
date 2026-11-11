@@ -8,6 +8,6 @@ schemas/gschemas.compiled
 .DS_Store
 Thumbs.db
 
-# Any temporary development files
-*.log
-*.tmp
+# Agent skills (installed tooling)
+.agents/
+skills-lock.json
