@@ -22,7 +22,8 @@ function autoMethodFromCountry(country) {
     if (c.includes('russia'))                                                          return 14;
     if (c.includes('morocco'))                                                         return 3;
     if (c.includes('jordan'))                                                          return 3;
-    if (c.includes('algeria') || c.includes('tunisia'))                               return 5;
+    if (c.includes('algeria'))                               return 5;
+    if (c.includes('tunisia'))                                return 15;
     if (c.includes('indonesia') || c.includes('malaysia'))                            return 11;
     return 3; // MWL default
 }
@@ -259,7 +260,8 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
                 'MUIS (Singapore)',
                 'UOIF (France)',
                 'Diyanet (Turkey)',
-                'Russia'
+                'Russia',
+                'Tunisian Ministry of Religious Affairs'
             ])
         });
         settings.bind('method', methodRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
