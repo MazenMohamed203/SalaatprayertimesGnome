@@ -24,3 +24,9 @@ jobs:
         run: |
           gjs -m tests/offlineCalc.test.js
           gjs -m tests/prayerCompute.test.js
+      - name: Package (gnome-extensions pack)
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y gnome-shell 2>/dev/null || true
+          gnome-extensions pack --force 2>&1 | tail -5 || true
+          ls -la *.zip 2>/dev/null || true
