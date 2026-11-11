@@ -4,6 +4,7 @@ import { SalatController } from './lib/controller.js';
 export default class SalatPrayerTimeExtension extends Extension {
     enable() {
         this._ctrl = new SalatController(this);
+        this._ctrl.enable();
     }
 
     disable() {
