@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GNOME tooling
+        run: sudo apt-get update && sudo apt-get install -y gjs libglib2.0-dev-bin nodejs
+      - name: Recompile schema and verify committed file
+        run: |
+          glib-compile-schemas schemas
+          git diff --exit-code schemas/gschemas.compiled
+      - name: Syntax check (node)
+        run: |
+          for f in extension.js prefs.js lib/controller.js logic/*.js tests/*.js; do
+            node --input-type=module --check < "$f" || exit 1
+          done
+      - name: Unit tests (gjs)
+        run: gjs -m tests/offlineCalc.test.js

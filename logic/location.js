@@ -1,28 +1,7 @@
 import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 
-function autoMethodFromCountry(country) {
-    const c = (country || '').toLowerCase();
-    if (c.includes('egypt'))                                                           return 5;
-    if (c.includes('saudi') || c.includes('makkah') || c.includes('medina'))          return 4;
-    if (c.includes('pakistan') || c.includes('bangladesh') ||
-        c.includes('india')   || c.includes('afghanistan'))                           return 1;
-    if (c.includes('usa') || c.includes('united states') || c.includes('canada'))     return 2;
-    if (c.includes('iran'))                                                            return 7;
-    if (c.includes('kuwait'))                                                          return 9;
-    if (c.includes('qatar'))                                                           return 10;
-    if (c.includes('uae') || c.includes('emirates') || c.includes('dubai'))           return 8;
-    if (c.includes('bahrain') || c.includes('oman') || c.includes('yemen'))           return 8;
-    if (c.includes('singapore'))                                                       return 11;
-    if (c.includes('france'))                                                          return 12;
-    if (c.includes('turkey') || c.includes('türkiye'))                                return 13;
-    if (c.includes('russia'))                                                          return 14;
-    if (c.includes('morocco'))                                                         return 3;
-    if (c.includes('jordan'))                                                          return 3;
-    if (c.includes('algeria') || c.includes('tunisia'))                               return 5;
-    if (c.includes('indonesia') || c.includes('malaysia'))                            return 11;
-    return 3; // Muslim World League — safe global default
-}
+import { autoMethodFromCountry } from './methods.js';
 
 /**
  * LocationService — resolves the user's location via IP geolocation.
@@ -31,10 +10,11 @@ function autoMethodFromCountry(country) {
  * On success also auto-selects the best calculation method for the country.
  */
 export class LocationService {
-    constructor(settings) {
+    constructor(settings, onFailure = null) {
         this._settings = settings;
         this._session  = new Soup.Session();
         this._starting = false;
+        this._onFailure = onFailure;
     }
 
     start() {
@@ -83,6 +63,9 @@ export class LocationService {
             }
             console.error('[SalatPrayerTime] All geolocation services failed.');
             this._starting = false;
+            if (typeof this._onFailure === 'function') {
+                try { this._onFailure(); } catch (e) { console.error('[SalatPrayerTime] location failure callback error:', e); }
+            }
         });
     }
 

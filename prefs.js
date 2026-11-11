@@ -5,27 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gst from 'gi://Gst';
 
-function autoMethodFromCountry(country) {
-    const c = (country || '').toLowerCase();
-    if (c.includes('egypt'))                                                          return 5;
-    if (c.includes('saudi') || c.includes('makkah') || c.includes('medina'))         return 4;
-    if (c.includes('pakistan') || c.includes('bangladesh') || c.includes('india') || c.includes('afghanistan')) return 1;
-    if (c.includes('usa') || c.includes('united states') || c.includes('canada'))    return 2;
-    if (c.includes('iran'))                                                            return 7;
-    if (c.includes('kuwait'))                                                          return 9;
-    if (c.includes('qatar'))                                                           return 10;
-    if (c.includes('uae') || c.includes('emirates') || c.includes('dubai'))           return 8;
-    if (c.includes('bahrain') || c.includes('oman') || c.includes('yemen'))           return 8;
-    if (c.includes('singapore'))                                                       return 11;
-    if (c.includes('france'))                                                          return 12;
-    if (c.includes('turkey') || c.includes('türkiye'))                                return 13;
-    if (c.includes('russia'))                                                          return 14;
-    if (c.includes('morocco'))                                                         return 3;
-    if (c.includes('jordan'))                                                          return 3;
-    if (c.includes('algeria') || c.includes('tunisia'))                               return 5;
-    if (c.includes('indonesia') || c.includes('malaysia'))                            return 11;
-    return 3; // MWL default
-}
+import { autoMethodFromCountry } from './logic/methods.js';
 
 export default class SalatPrayerTimePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -344,6 +324,13 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
         settings.bind('adhan-volume', adhanVolRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         audioGroup.add(adhanVolRow);
 
+        const adhanPathRow = new Adw.EntryRow({
+            title: 'Custom Adhan Audio Path',
+            text: settings.get_string('adhan-audio-path') || ''
+        });
+        settings.bind('adhan-audio-path', adhanPathRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        audioGroup.add(adhanPathRow);
+
         const testRow = new Adw.ActionRow({
             title: 'Test Adhan',
             subtitle: 'Preview your current adhan choice and volume'
@@ -378,9 +365,12 @@ export default class SalatPrayerTimePreferences extends ExtensionPreferences {
             const mode       = settings.get_int('adhan-playback-mode');
 
             try {
-                testPipeline = Gst.parse_launch(
-                    `uridecodebin uri="${uri}" ! audioconvert ! audioresample ! volume volume=${vol} ! autoaudiosink`
-                );
+                if (!Gst.is_initialized())
+                    Gst.init(null);
+
+                testPipeline = Gst.ElementFactory.make('playbin', 'test-playbin');
+                testPipeline.set_property('uri', uri);
+                testPipeline.set_property('volume', vol);
                 testPipeline.set_state(Gst.State.PLAYING);
                 testBtn.label = 'Stop Test ■';
 
